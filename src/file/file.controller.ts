@@ -40,6 +40,11 @@ export class FileController {
     }));
   }
 
+  @Get('token')
+  getToken() {
+    return this.fileService.getToken();
+  }
+
   // 启用oss 下载需要做临时验证
   @Get('oss:file')
   signatureUrl(@Param() params: { file: string }) {

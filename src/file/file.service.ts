@@ -1,7 +1,7 @@
 import { Injectable, UploadedFile } from '@nestjs/common';
 import * as OSS from 'ali-oss';
-import { STS } from 'ali-oss';
 import { getContentType, useFilePath } from 'src/utils/file.util';
+const StsClient = require('@alicloud/sts-sdk');
 
 @Injectable()
 export class FileService {
@@ -43,6 +43,21 @@ export class FileService {
       console.log(e);
       return e;
     }
+  }
+
+  async getToken() {
+    const sts = new StsClient({
+      endpoint: 'sts.aliyuncs.com',
+      accessKeyId: process.env.OSS_ACCESS_KEY_ID,
+      accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
+    });
+    const res = await sts.assumeRole(
+      process.env.OSS_ROLE_ARN,
+      process.env.OSS_ROLE_SESSION_NAME,
+    );
+    return {
+      ...res.Credentials,
+    };
   }
 
   /**
@@ -97,7 +112,9 @@ export class FileService {
       // 填写Object完整路径，例如exampledir/exampleobject.txt。Object完整路径中不能包含Bucket名称。
       // const head = await this.client.head(ossPath);
       // console.log(head);
-      return result;
+      return {
+        url: result.res.requestUrls[0],
+      };
     } catch (e) {
       // 捕获超时异常。
       if (e.code === 'ConnectionTimeoutError') {
@@ -142,30 +159,6 @@ export class FileService {
     return {
       url,
     };
-  }
-
-  getToken() {
-    let sts = new STS({
-      // 阿里云账号AccessKey拥有所有API的访问权限，风险很高。强烈建议您创建并使用RAM用户进行API访问或日常运维，请登录RAM控制台创建RAM用户。
-      accessKeyId: process.env.OSS_ACCESS_KEY_ID,
-      accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET,
-    });
-    sts
-      .assumeRole('roleArn', 'policy', 'expiration', 'sessionName')
-      .then((result) => {
-        console.log(result);
-        result = JSON.parse(result);
-        return {
-          AccessKeyId: result.credentials.AccessKeyId,
-          AccessKeySecret: result.credentials.AccessKeySecret,
-          SecurityToken: result.credentials.SecurityToken,
-          Expiration: result.credentials.Expiration,
-        };
-      })
-      .catch((err) => {
-        console.log(err);
-        return err;
-      });
   }
 
   // oss 断点上传

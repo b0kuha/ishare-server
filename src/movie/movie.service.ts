@@ -1,3 +1,5 @@
+import { User } from 'libs/db/src/model/user.model';
+import { QueryParamsDto } from './dto/query-params.dto';
 import { ReturnModelType } from '@typegoose/typegoose';
 import { Movie } from '@app/db/model/movie.model';
 import { Injectable } from '@nestjs/common';
@@ -17,17 +19,34 @@ export class MovieService {
     return data;
   }
 
-  async findAll() {
-    const res = await this.movieModel.find();
+  async findAll({ title, user, current, size }: QueryParamsDto) {
+    let params = {};
+    current = current ? current : 1;
+    size = size ? size : 10;
+
+    if (title || user) {
+      params = {
+        $or: [
+          title ? { title: new RegExp(title) } : '',
+          user ? { user: new RegExp(user) } : '',
+        ],
+      };
+    }
+
+    const res = await this.movieModel
+      .find(params)
+      .skip((current - 1) * size)
+      .limit(size)
+      .populate('user movie');
     return res;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} movie`;
+  async findOne(id: number) {
+    return await this.movieModel.findOne({ _id: id });
   }
 
-  update(id: number, updateMovieDto: UpdateMovieDto) {
-    return `This action updates a #${id} movie`;
+  async update(id: number, updateMovieDto: UpdateMovieDto) {
+    return this.movieModel.updateOne({ _id: id, update: updateMovieDto });
   }
 
   remove(id: number) {

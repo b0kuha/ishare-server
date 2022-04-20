@@ -1,3 +1,5 @@
+import { AuthGuard } from '@nestjs/passport';
+import { QueryParamsDto } from './dto/query-params.dto';
 import { ApiTags } from '@nestjs/swagger';
 import {
   Controller,
@@ -7,6 +9,9 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { MovieService } from './movie.service';
 import { CreateMovieDto } from './dto/create-movie.dto';
@@ -18,13 +23,15 @@ export class MovieController {
   constructor(private readonly movieService: MovieService) {}
 
   @Post()
-  create(@Body() createMovieDto: CreateMovieDto) {
+  @UseGuards(AuthGuard('jwt'))
+  create(@Body() createMovieDto: CreateMovieDto, @Req() req) {
+    createMovieDto.user = req.user._id;
     return this.movieService.create(createMovieDto);
   }
 
   @Get()
-  findAll() {
-    return this.movieService.findAll();
+  findAll(@Query() queryParams: QueryParamsDto) {
+    return this.movieService.findAll(queryParams);
   }
 
   @Get(':id')

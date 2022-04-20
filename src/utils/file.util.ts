@@ -3,7 +3,7 @@ const mime = require('mime-types');
 
 export function getContentType(file) {
   return (
-    file.mimetype.split('/')[0] + file.originalname.split('.')[1] ||
+    file.mimetype.split('/')[0] + '/' + file.originalname.split('.')[1] ||
     file.mimetype
   );
 }
