@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { CommentModule } from './comment/comment.module';
 import { MovieModule } from './movie/movie.module';
 import { FileModule } from './file/file.module';
+import { ReplyModule } from './reply/reply.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { FileModule } from './file/file.module';
     CommentModule,
     MovieModule,
     FileModule,
+    ReplyModule,
   ],
   controllers: [AppController],
   providers: [AppService],
