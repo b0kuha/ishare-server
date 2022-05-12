@@ -14,6 +14,5 @@ export class CreateMovieDto {
   @IsNotEmpty({ message: '视频不能为空' })
   url: string;
 
-  @IsNotEmpty({ message: '用户不能为空' })
-  user: string;
+  user?: string;
 }

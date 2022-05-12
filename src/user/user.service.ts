@@ -1,7 +1,8 @@
 import { ReturnModelType } from '@typegoose/typegoose';
 import { InjectModel } from 'nestjs-typegoose';
+import { compareSync } from 'bcryptjs';
 import {
-  ForbiddenException,
+  BadRequestException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -9,6 +10,8 @@ import {
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from 'libs/db/src/model/user.model';
+import { QueryParamsDto } from './dto/query-params.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 
 @Injectable()
 export class UserService {
@@ -28,22 +31,83 @@ export class UserService {
     }
 
     const newUser = await this.userModel.create(createUserDto);
-    return newUser;
+    return {
+      data: newUser,
+    };
   }
 
-  findAll() {
-    return `This action returns all user`;
+  async findAll(queryParams: QueryParamsDto) {
+    let nickname = queryParams?.nickname || '',
+      current = queryParams?.current || 1,
+      size = queryParams?.size || 10;
+
+    let filter = {
+      nickname: new RegExp(nickname, 'ig'),
+    };
+    const total = await this.userModel.find(filter).count();
+
+    const res = await this.userModel
+      .find(filter)
+      .skip((current - 1) * size)
+      .limit(size)
+      .populate('role');
+
+    return {
+      data: res,
+      total,
+    };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async update(updateUserDto: UpdateUserDto) {
+    const res = await this.userModel.findByIdAndUpdate(
+      updateUserDto._id,
+      updateUserDto,
+    );
+    return {
+      data: res,
+    };
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async remove(id: string) {
+    const res = await this.userModel.findByIdAndDelete(id);
+    return {
+      data: res,
+    };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async updatePassword(updatePasswordDto: UpdatePasswordDto, user) {
+    user = await this.userModel
+      .findOne({ email: user.email })
+      .select('+password');
+    if (!user) {
+      return;
+    }
+    if (!compareSync(updatePasswordDto.oldPwd, user.password)) {
+      throw new BadRequestException('密码不正确');
+    }
+    if (updatePasswordDto.newPwd !== updatePasswordDto.confirmPwd) {
+      throw new BadRequestException('密码不一致');
+    }
+    const res = await this.userModel.findOneAndUpdate(
+      { email: user.email },
+      {
+        password: updatePasswordDto.newPwd,
+      },
+    );
+    return {
+      data: res,
+    };
+  }
+
+  async resetPassword(id: string) {
+    if (!id) {
+      return;
+    }
+    const res = await this.userModel.findByIdAndUpdate(id, {
+      password: 123456,
+    });
+    return {
+      data: res,
+    };
   }
 }

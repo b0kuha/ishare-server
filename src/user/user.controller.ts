@@ -1,4 +1,3 @@
-import { IdDto } from './dto/id.dto';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import {
   Controller,
@@ -8,10 +7,18 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
+  UseInterceptors,
+  Req,
+  UseGuards,
+  ClassSerializerInterceptor,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { QueryParamsDto } from './dto/query-params.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('用户')
 @Controller('user')
@@ -25,22 +32,28 @@ export class UserController {
   }
 
   @Get()
-  findAll() {
-    return this.userService.findAll();
+  findAll(@Query() queryParams: QueryParamsDto) {
+    return this.userService.findAll(queryParams);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: IdDto) {
-    return this.userService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: IdDto, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(+id, updateUserDto);
+  @Patch()
+  update(@Body() updateUserDto: UpdateUserDto) {
+    return this.userService.update(updateUserDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.userService.remove(+id);
+    return this.userService.remove(id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Patch('updatePwd')
+  updatePassword(@Body() updatePasswordDto: UpdatePasswordDto, @Req() req) {
+    return this.userService.updatePassword(updatePasswordDto, req.user);
+  }
+
+  @Patch('resetPwd/:id')
+  resetPassword(@Param('id') id: string) {
+    return this.userService.resetPassword(id);
   }
 }

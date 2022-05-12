@@ -29,15 +29,17 @@ export class Movie {
   @prop()
   introduction: string;
 
-  @prop({
-    enum: [MovieStatus.ON, MovieStatus.OFF],
-    default: MovieStatus.OFF,
-  })
-  status: number;
+  @prop({ default: false })
+  status: boolean;
 
-  //   @ApiProperty({ description: '资源类型' })
-  //   @prop({enum:[ResourceType.Movie,ResourceType.Comment]}）
-  //   resourceType:ResourceType
-  //   @prop({default:MovieStatus})
-  //   status:Ref<>
+  @prop({ default: 0 })
+  like: number;
+
+  @prop({ default: 0 })
+  unlike: number;
+
+  @prop({ default: 0 })
+  views: number;
+
+  // tags:
 }

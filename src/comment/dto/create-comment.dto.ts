@@ -1,10 +1,12 @@
-import { IsEmpty } from 'class-validator';
+import { IsNotEmpty, isNotEmpty } from 'class-validator';
 
 export class CreateCommentDto {
-  user: string;
+  @IsNotEmpty()
+  type: string;
 
-  resourceType: string;
+  @IsNotEmpty()
+  object: string;
 
-  @IsEmpty({ message: '评论不能为空' })
+  @IsNotEmpty({ message: '评论不能为空' })
   content: string;
 }

@@ -1,5 +1,4 @@
 import { AuthGuard } from '@nestjs/passport';
-import { QueryParamsDto } from './dto/query-params.dto';
 import { ApiTags } from '@nestjs/swagger';
 import {
   Controller,
@@ -8,7 +7,6 @@ import {
   Body,
   Patch,
   Param,
-  Delete,
   Query,
   UseGuards,
   Req,
@@ -30,22 +28,17 @@ export class MovieController {
   }
 
   @Get()
-  findAll(@Query() queryParams: QueryParamsDto) {
-    return this.movieService.findAll(queryParams);
+  list(@Query() queryParams) {
+    return this.movieService.list(queryParams);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.movieService.findOne(+id);
+    return this.movieService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateMovieDto: UpdateMovieDto) {
-    return this.movieService.update(+id, updateMovieDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.movieService.remove(+id);
+    return this.movieService.update(id, updateMovieDto);
   }
 }

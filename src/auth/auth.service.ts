@@ -11,7 +11,7 @@ export class AuthService {
       email: user.email,
     });
     return {
-      token,
+      data: token,
     };
   }
 }

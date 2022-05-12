@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { hashSync } from 'bcryptjs';
-import { prop, modelOptions } from '@typegoose/typegoose';
+import { prop, modelOptions, Ref } from '@typegoose/typegoose';
 import { Exclude } from 'class-transformer';
+import { Role } from './role.model';
 
 @modelOptions({
   schemaOptions: {
@@ -10,7 +11,7 @@ import { Exclude } from 'class-transformer';
 })
 export class User {
   @ApiProperty({ description: '邮箱' })
-  @prop()
+  @prop({ unique: true, required: true })
   email: string;
 
   @ApiProperty({ description: '昵称' })
@@ -35,6 +36,6 @@ export class User {
   avatar: string;
 
   @ApiProperty({ description: '角色' })
-  @prop()
-  role: string;
+  @prop({ ref: () => Role })
+  role: Ref<Role>;
 }

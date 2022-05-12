@@ -1,5 +1,4 @@
 import { User } from 'libs/db/src/model/user.model';
-import { QueryParamsDto } from './dto/query-params.dto';
 import { ReturnModelType } from '@typegoose/typegoose';
 import { Movie } from '@app/db/model/movie.model';
 import { Injectable } from '@nestjs/common';
@@ -12,6 +11,8 @@ export class MovieService {
   constructor(
     @InjectModel(Movie)
     private readonly movieModel: ReturnModelType<typeof Movie>,
+    @InjectModel(User)
+    private readonly userModel: ReturnModelType<typeof User>,
   ) {}
 
   async create(createMovieDto: CreateMovieDto) {
@@ -19,37 +20,111 @@ export class MovieService {
     return data;
   }
 
-  async findAll({ title, user, current, size }: QueryParamsDto) {
-    let params = {};
-    current = current ? current : 1;
-    size = size ? size : 10;
+  async list(queryParams) {
+    let title = queryParams?.title || '',
+      user = queryParams?.user || '',
+      size = queryParams?.size || 10,
+      current = queryParams?.current || 1,
+      status = queryParams?.status || null;
 
-    if (title || user) {
-      params = {
-        $or: [
-          title ? { title: new RegExp(title) } : '',
-          user ? { user: new RegExp(user) } : '',
-        ],
-      };
+    let filter = {
+      $or: [
+        { 'user.nickname': { $regex: user } },
+        { title: { $regex: title } },
+      ],
+    };
+    if (status) {
+      filter.status = status;
     }
 
-    const res = await this.movieModel
-      .find(params)
-      .skip((current - 1) * size)
-      .limit(size)
-      .populate('user movie');
-    return res;
+    console.log(queryParams);
+    let res = await this.movieModel
+      .find(filter)
+      .setOptions({
+        limit: size,
+        skip: (current - 1) * size,
+      })
+      .populate('user');
+
+    let total = await this.movieModel.find(filter).count();
+
+    // let res = await this.movieModel.aggregate([
+    //   {
+    //     $lookup: {
+    //       from: 'users',
+    //       localField: 'user',
+    //       foreignField: '_id',
+    //       as: 'user',
+    //     },
+    //   },
+    //   {
+    //     $match: {
+    //       $and: [
+    //         {
+    //           'user.nickname': new RegExp(user, 'ig'),
+    //         },
+    //         {
+    //           title: new RegExp(title, 'ig'),
+    //         },
+    //         // {
+    //         //   status,
+    //         // },
+    //       ],
+    //     },
+    //   },
+    //   {
+    //     $facet: {
+    //       total: [
+    //         {
+    //           $count: 'total',
+    //         },
+    //       ],
+    //       data: [
+    //         {
+    //           $limit: size,
+    //         },
+    //         {
+    //           $skip: (current - 1) * size,
+    //         },
+    //         {
+    //           $project: {
+    //             user: {
+    //               _id: 0,
+    //               password: 0,
+    //             },
+    //           },
+    //         },
+    //         {
+    //           $sort: {
+    //             createAt: 1,
+    //           },
+    //         },
+    //       ],
+    //     },
+    //   },
+    // ]);
+    // let total = res[0].total.length ? res[0]?.total[0].total : 0;
+    // let data = res[0].data;
+    return {
+      total,
+      data: res,
+    };
   }
 
-  async findOne(id: number) {
-    return await this.movieModel.findOne({ _id: id });
+  async findOne(id: string) {
+    await this.movieModel.updateOne({ _id: id }, { $set: { views: +1 } });
+    const res = await this.movieModel.findOne({ _id: id }).populate('user');
+    return {
+      data: res,
+    };
   }
 
-  async update(id: number, updateMovieDto: UpdateMovieDto) {
-    return this.movieModel.updateOne({ _id: id, update: updateMovieDto });
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} movie`;
+  async update(id: string, updateMovieDto: UpdateMovieDto) {
+    const res = await this.movieModel.findByIdAndUpdate(id, {
+      ...updateMovieDto,
+    });
+    return {
+      data: res,
+    };
   }
 }
