@@ -5,7 +5,6 @@ import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { Role } from '@app/db/model/role.model';
 import { QueryParamsDto } from './dto/query-params.dto';
-import { UpdatePermDto } from './dto/update-perm.dto';
 
 @Injectable()
 export class RoleService {
@@ -57,10 +56,10 @@ export class RoleService {
     };
   }
 
-  async updatePerm(updatePerm: UpdatePermDto) {
-    const res = await this.roleModel.updateOne(updatePerm);
+  async updatePerm(id, updatePerm) {
+    const data = await this.roleModel.findByIdAndUpdate(id, updatePerm);
     return {
-      data: res,
+      data,
     };
   }
 }

@@ -13,7 +13,6 @@ import { RoleService } from './role.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { QueryParamsDto } from './dto/query-params.dto';
-import { UpdatePermDto } from './dto/update-perm.dto';
 
 @ApiTags('角色')
 @Controller('role')
@@ -40,8 +39,8 @@ export class RoleController {
     return this.roleService.remove(id);
   }
 
-  @Patch('perm')
-  updatePerm(@Body() updatePermDto: UpdatePermDto) {
-    return this.roleService.updatePerm(updatePermDto);
+  @Patch('perm/:id')
+  updatePerm(@Param('id') id: string, @Body() updatePermDto) {
+    return this.roleService.updatePerm(id, updatePermDto);
   }
 }

@@ -103,11 +103,11 @@ export class UserService {
     if (!id) {
       return;
     }
-    const res = await this.userModel.findByIdAndUpdate(id, {
-      password: 123456,
+    const data = await this.userModel.findByIdAndUpdate(id, {
+      password: '123456',
     });
     return {
-      data: res,
+      data,
     };
   }
 }

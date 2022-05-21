@@ -53,6 +53,7 @@ export class UserController {
   }
 
   @Patch('resetPwd/:id')
+  @UseGuards(AuthGuard('jwt'))
   resetPassword(@Param('id') id: string) {
     return this.userService.resetPassword(id);
   }

@@ -1,3 +1,4 @@
+import { Reply } from './reply.model';
 import { Movie } from '@app/db/model/movie.model';
 import { ApiProperty } from '@nestjs/swagger';
 import { modelOptions, prop, Ref } from '@typegoose/typegoose';
@@ -6,6 +7,12 @@ import { User } from './user.model';
 @modelOptions({
   schemaOptions: {
     timestamps: true,
+    toJSON: {
+      virtuals: true,
+    },
+    toObject: {
+      virtuals: true,
+    },
   },
 })
 export class Comment {
@@ -16,12 +23,12 @@ export class Comment {
   @prop()
   content: string;
 
-  @prop({ enum: ['Movie', 'Comment'] })
+  @prop({ enum: ['Movie'] })
   type: string;
 
   @ApiProperty({ description: '资源类型' })
   @prop({ refPath: 'type' })
-  object: Ref<Comment | Movie>;
+  object: Ref<Movie>;
 
   @ApiProperty({ description: '点赞数' })
   @prop({ default: 0 })
@@ -32,4 +39,7 @@ export class Comment {
 
   @prop({ default: false })
   is_delete: boolean;
+
+  @prop({ ref: () => Reply })
+  replies: Ref<Reply>[];
 }

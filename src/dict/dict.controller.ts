@@ -1,3 +1,5 @@
+import { ReturnModelType } from '@typegoose/typegoose';
+import { InjectModel } from 'nestjs-typegoose';
 import {
   Controller,
   Get,
@@ -8,36 +10,69 @@ import {
   Delete,
   Query,
 } from '@nestjs/common';
-import { DictService } from './dict.service';
 import { CreateDictDto } from './dto/create-dict.dto';
-import { UpdateDictDto } from './dto/update-dict.dto';
+import { Dict } from '@app/db/model/dict.model';
 
 @Controller('dict')
 export class DictController {
-  constructor(private readonly dictService: DictService) {}
+  constructor(
+    @InjectModel(Dict) private readonly dictModel: ReturnModelType<typeof Dict>,
+  ) {}
 
   @Post()
-  create(@Body() createDictDto: CreateDictDto) {
-    return this.dictService.create(createDictDto);
+  async create(@Body() createDictDto: CreateDictDto) {
+    const data = await this.dictModel.create(createDictDto);
+    return {
+      data,
+    };
+  }
+
+  @Post('children/:id')
+  async createChild(
+    @Param('id') id: string,
+    @Body() createDictDto: CreateDictDto,
+  ) {
+    let dict = await this.dictModel.findById(id);
+    let newDict = await this.dictModel.create(createDictDto);
+    let data = await this.dictModel.findByIdAndUpdate(dict._id, {
+      $push: {
+        children: newDict._id,
+      },
+    });
+    return {
+      data,
+    };
   }
 
   @Get()
-  findAll(@Query() params) {
-    return this.dictService.findAll(params);
+  async findAll(@Query('query') query: string) {
+    let params = JSON.parse(query);
+
+    const data = await this.dictModel
+      .find(params.where)
+      .setOptions(params)
+      .populate('children');
+
+    const total = await this.dictModel.find(params.where).count();
+    return {
+      data,
+      total,
+    };
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.dictService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    const data = await this.dictModel.findById(id);
+    return {
+      data,
+    };
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDictDto: UpdateDictDto) {
-    return this.dictService.update(+id, updateDictDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.dictService.remove(+id);
+  async update(@Param('id') id: string, @Body() updateDictDto) {
+    const data = await this.dictModel.findByIdAndUpdate(id, updateDictDto);
+    return {
+      data,
+    };
   }
 }

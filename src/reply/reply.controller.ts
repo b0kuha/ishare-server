@@ -1,34 +1,72 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { ReplyService } from './reply.service';
+import { AuthGuard } from '@nestjs/passport';
+import { ApiTags } from '@nestjs/swagger';
+import { ReturnModelType } from '@typegoose/typegoose';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
+import { InjectModel } from 'nestjs-typegoose';
 import { CreateReplyDto } from './dto/create-reply.dto';
-import { UpdateReplyDto } from './dto/update-reply.dto';
+import { Reply } from '@app/db/model/reply.model';
 
+@ApiTags('回复')
 @Controller('reply')
 export class ReplyController {
-  constructor(private readonly replyService: ReplyService) {}
+  constructor(
+    @InjectModel(Reply)
+    private readonly replyModel: ReturnModelType<typeof Reply>,
+  ) {}
 
+  @UseGuards(AuthGuard('jwt'))
   @Post()
-  create(@Body() createReplyDto: CreateReplyDto) {
-    return this.replyService.create(createReplyDto);
+  async create(@Body() createReplyDto: CreateReplyDto, @Req() { user }) {
+    const data = await this.replyModel.create({
+      ...createReplyDto,
+      user: user._id,
+    });
+    return {
+      data,
+    };
   }
 
   @Get()
-  findAll() {
-    return this.replyService.findAll();
+  async findAll(@Query('query') query: string) {
+    let params = JSON.parse(query);
+
+    const data = await this.replyModel
+      .find(params.where)
+      .setOptions(params)
+      .populate('user reply_user');
+
+    const total = await this.replyModel.find(params.where).count();
+
+    return {
+      data,
+      total,
+    };
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.replyService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    const data = await this.replyModel.findById(id).populate('user reply_user');
+    return {
+      data,
+    };
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateReplyDto: UpdateReplyDto) {
-    return this.replyService.update(+id, updateReplyDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.replyService.remove(+id);
+  async update(@Param('id') id: string, @Body() updateReplyDto) {
+    const data = await this.replyModel.findByIdAndUpdate(id, updateReplyDto);
+    return {
+      data,
+    };
   }
 }

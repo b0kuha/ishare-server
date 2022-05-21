@@ -11,34 +11,83 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { MovieService } from './movie.service';
 import { CreateMovieDto } from './dto/create-movie.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
+import { Movie } from '@app/db/model/movie.model';
+import { User } from '@app/db/model/user.model';
+import { ReturnModelType } from '@typegoose/typegoose';
+import { InjectModel } from 'nestjs-typegoose';
 
 @ApiTags('视频')
 @Controller('movie')
 export class MovieController {
-  constructor(private readonly movieService: MovieService) {}
+  constructor(
+    @InjectModel(Movie)
+    private readonly movieModel: ReturnModelType<typeof Movie>,
+    @InjectModel(User)
+    private readonly userModel: ReturnModelType<typeof User>,
+  ) {}
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
-  create(@Body() createMovieDto: CreateMovieDto, @Req() req) {
-    createMovieDto.user = req.user._id;
-    return this.movieService.create(createMovieDto);
+  async create(@Body() createMovieDto: CreateMovieDto, @Req() { user }) {
+    const data = await this.movieModel.create({
+      ...createMovieDto,
+      user: user._id,
+    });
+    return {
+      data,
+    };
   }
 
   @Get()
-  list(@Query() queryParams) {
-    return this.movieService.list(queryParams);
+  async list(@Query('query') query: string) {
+    let params = JSON.parse(query);
+    const data = await this.movieModel
+      .find(params.where)
+      .setOptions(params)
+      .populate('user');
+    const total = await this.movieModel.find(params.where).count();
+    return {
+      data,
+      total,
+    };
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.movieService.findOne(id);
+  @Get('m/:id')
+  async findOne(@Param('id') id: string) {
+    await this.movieModel.updateOne({ _id: id }, { $inc: { views: 1 } });
+    const data = await this.movieModel.findById(id).populate('user');
+    return {
+      data,
+    };
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('personal')
+  async findUserMovie(@Query('query') query: string, @Req() { user }) {
+    let params = JSON.parse(query);
+
+    const data = await this.movieModel
+      .find({ user: user._id })
+      .setOptions(params)
+      .populate('user');
+
+    const total = await this.movieModel.find({ user: user._id }).count();
+    return {
+      data,
+      total,
+    };
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateMovieDto: UpdateMovieDto) {
-    return this.movieService.update(id, updateMovieDto);
+  async update(
+    @Param('id') id: string,
+    @Body() updateMovieDto: UpdateMovieDto,
+  ) {
+    const data = await this.movieModel.findByIdAndUpdate(id, updateMovieDto);
+    return {
+      data,
+    };
   }
 }
